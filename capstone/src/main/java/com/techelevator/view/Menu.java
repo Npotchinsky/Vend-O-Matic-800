@@ -29,7 +29,10 @@ public class Menu {
 		String userInput = in.nextLine();
 		try {
 			int selectedOption = Integer.valueOf(userInput);
-			if (selectedOption > 0 && selectedOption <= options.length) {
+			if (selectedOption == 4){
+				choice = "4";
+			}
+			else if (selectedOption > 0 && selectedOption <= options.length) {
 				choice = options[selectedOption - 1];
 			}
 		} catch (NumberFormatException e) {

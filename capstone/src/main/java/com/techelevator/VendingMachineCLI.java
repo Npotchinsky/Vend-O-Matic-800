@@ -7,8 +7,15 @@ import java.io.FileNotFoundException;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Scanner;
 
 public class VendingMachineCLI {
@@ -27,6 +34,7 @@ public class VendingMachineCLI {
 	public VendingMachineCLI(Menu menu) {
 		this.menu = menu;
 	}
+	DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-dd-yyyy hh:mm:ss a");
 
 	public void run() {
 		File file = new File("capstone/vendingmachine.csv");
@@ -38,14 +46,14 @@ public class VendingMachineCLI {
 			}
 		} catch (FileNotFoundException e) {
 
-			System.out.println("Woops");
+			System.out.println("Whoops");
 		}
 		while (true) {
 			String choice = (String) menu.getChoiceFromOptions(MAIN_MENU_OPTIONS);
 
 			if (choice.equals(MAIN_MENU_OPTION_DISPLAY_ITEMS)) {
 				for (VendingItem item:vendingItemList) {
-					System.out.print(item.getSlot()+" "+item.getName()+" "+ item.getPrice()+ " ");
+					System.out.print(item.getSlot()+" "+item.getName()+" "+ currency.format(item.getPrice())+ " ");
 					if (item.getQuantity()>0){
 						System.out.println(item.getQuantity());
 					}
@@ -55,17 +63,26 @@ public class VendingMachineCLI {
 				}
 			} else if (choice.equals(MAIN_MENU_OPTION_PURCHASE)) {
 				Menu purchasingMenu = new Menu(System.in,System.out);
-				double moneyProvided = 0.00;
+				BigDecimal moneyProvided = new BigDecimal(0.00);
+
 				while (true) {
-					System.out.println("\n Current Money Provided:  "+currency.format(moneyProvided));
+					System.out.println("\n Current Money Provided:  " + currency.format(moneyProvided));
 					String purchasingChoice = (String) purchasingMenu.getChoiceFromOptions(PURCHASING_MENU_OPTIONS);
 					if (purchasingChoice.equals(PURCHASING_MENU_OPTION_FEED_MONEY)){
-						System.out.println("Please input a valid whole dollar amount($1,$2,$5,$10,): ");
-						moneyProvided += Double.parseDouble(scanner.next());
+						System.out.println("Please input a valid whole dollar amount($1,$2,$5,$10): ");
+						double money = Double.parseDouble(scanner.next());
+						if(money == 1 || money == 2 || money == 5 || money == 10) {
+							moneyProvided = moneyProvided.add(BigDecimal.valueOf(money));
+							VendingLog.Log(String.valueOf(LocalDateTime.now().format(formatter) + " FEED MONEY " +
+									currency.format(money) + " " + currency.format(moneyProvided)));
+						}
+						else {
+							System.out.println("Invalid Input");
+						}
 					}
 					else if (purchasingChoice.equals(PURCHASING_MENU_OPTION_SELECT_PRODUCT)) {
 						for (VendingItem item : vendingItemList) {
-							System.out.print(item.getSlot() + " " + item.getName() + " " + item.getPrice() + " ");
+							System.out.print(item.getSlot() + " " + item.getName() + " " + currency.format(item.getPrice()) + " ");
 							if (item.getQuantity() > 0) {
 								System.out.println(item.getQuantity());
 							} else {
@@ -75,43 +92,60 @@ public class VendingMachineCLI {
 						}
 						System.out.println("Please make your selection: ");
 						String s = scanner.next();
-						for (VendingItem item : vendingItemList){
-							if(item.getSlot().equals(s)){
-								if(item.getPrice() <= moneyProvided){
-									moneyProvided -= item.getPrice();
-									item.buyItem();
-									System.out.println(item.getName()+ " "+ currency.format(item.getPrice())+ " "+ currency.format(moneyProvided));
-									System.out.println(item.getEatingSounds());
-								}
-								else {
-									System.out.println("Insufficient funds");
-								}
-							}
-						}
+						for (int i = 0; i <= vendingItemList.size(); i++) {
+							if (i == vendingItemList.size()) {
+								System.out.println("Invalid Selection");
+								break;
+							} else if (vendingItemList.get(i).getSlot().equals(s)) {
+								if (moneyProvided.compareTo(vendingItemList.get(i).getPrice()) == 1
+										&& vendingItemList.get(i).getQuantity() > 0) {
+									moneyProvided = moneyProvided.subtract(vendingItemList.get(i).getPrice());
+									vendingItemList.get(i).buyItem();
+									System.out.println(vendingItemList.get(i).getName() + " " + currency.format(vendingItemList.get(i).getPrice()) + " " + currency.format(moneyProvided));
+									System.out.println(vendingItemList.get(i).getEatingSounds());
+									VendingLog.Log(String.valueOf(LocalDateTime.now().format(formatter) + " " + vendingItemList.get(i).getName() + " " + vendingItemList.get(i).getSlot() + " " +
+											currency.format(moneyProvided.add(vendingItemList.get(i).getPrice())) + " " + currency.format(moneyProvided)));
+									break;
 
+
+								} else if (vendingItemList.get(i).getQuantity() <= 0) {
+									System.out.println("Item Sold Out");
+									break;
+								} else {
+									System.out.println("Insufficient funds");
+									break;
+								}
+
+							}
+
+						}
 					}
+
+
 					else if (purchasingChoice.equals(PURCHASING_MENU_OPTION_FINISH_TRANSACTION)){
 						int quarters = 0;
 						int dimes = 0;
 						int nickles = 0;
-						BigDecimal moneyRemaining = BigDecimal.valueOf(moneyProvided);
+						BigDecimal moneyRemaining = moneyProvided;
 
-						while (moneyRemaining.compareTo(BigDecimal.valueOf(0.0))==1){
-							if(moneyRemaining.subtract(new BigDecimal("0.25")).compareTo(BigDecimal.valueOf(0.0))!=-1){
-								moneyRemaining = moneyRemaining.subtract(new BigDecimal("0.25"));
+
+						while (moneyProvided.compareTo(BigDecimal.valueOf(0.0))==1){
+							if(moneyProvided.subtract(new BigDecimal("0.25")).compareTo(BigDecimal.valueOf(0.0))!=-1){
+								moneyProvided = moneyProvided.subtract(new BigDecimal("0.25"));
 								quarters++;
 							}
-							else if (moneyRemaining.subtract(new BigDecimal("0.10")).compareTo(BigDecimal.valueOf(0.0))!=-1){
-								moneyRemaining = moneyRemaining.subtract(new BigDecimal("0.10"));
+							else if (moneyProvided.subtract(new BigDecimal("0.10")).compareTo(BigDecimal.valueOf(0.0))!=-1){
+								moneyProvided = moneyProvided.subtract(new BigDecimal("0.10"));
 								dimes++;
 							}
-							else if(moneyRemaining.subtract(new BigDecimal("0.05")).compareTo(BigDecimal.valueOf(0.0))!=-1){
-								moneyRemaining = moneyRemaining.subtract(new BigDecimal("0.05"));
+							else if(moneyProvided.subtract(new BigDecimal("0.05")).compareTo(BigDecimal.valueOf(0.0))!=-1){
+								moneyProvided = moneyProvided.subtract(new BigDecimal("0.05"));
 								nickles++;
 							}
-
 						}
 						System.out.println("Your change is " + quarters + " quarters, "+ dimes + " dimes, and "+ nickles + " nickles.");
+						VendingLog.Log(String.valueOf(LocalDateTime.now().format(formatter) + " GIVE CHANGE " +
+								currency.format(moneyRemaining) + " " + currency.format(moneyProvided)));
 						break;
 					}
 				}
@@ -119,6 +153,10 @@ public class VendingMachineCLI {
 			} else if (choice.equals(MAIN_MENU_OPTION_EXIT)) {
 				break;
 			}
+			else if (choice.equals("4")){
+				System.out.println("that worked!");
+			}
+
 		}
 	}
 
