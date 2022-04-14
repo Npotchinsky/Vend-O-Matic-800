@@ -13,4 +13,12 @@ public class VendingLog {
             System.err.println("File not found");
         }
     }
+
+    public static void clearLog(){
+        try (PrintWriter clearer = new PrintWriter(log)){
+            clearer.print("");
+        } catch (IOException e) {
+            System.err.println("File not found");
+        }
+    }
 }

@@ -4,6 +4,8 @@ import com.techelevator.view.Menu;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -37,6 +39,7 @@ public class VendingMachineCLI {
 	DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-dd-yyyy hh:mm:ss a");
 
 	public void run() {
+		VendingLog.clearLog();
 		File file = new File("capstone/vendingmachine.csv");
 		List<VendingItem> vendingItemList = new ArrayList<>();
 		try (Scanner scanner = new Scanner(file)) {
@@ -144,8 +147,8 @@ public class VendingMachineCLI {
 							}
 						}
 						System.out.println("Your change is " + quarters + " quarters, "+ dimes + " dimes, and "+ nickles + " nickles.");
-						VendingLog.Log(String.valueOf(LocalDateTime.now().format(formatter) + " GIVE CHANGE " +
-								currency.format(moneyRemaining) + " " + currency.format(moneyProvided)));
+						VendingLog.Log(LocalDateTime.now().format(formatter) + " GIVE CHANGE " +
+								currency.format(moneyRemaining) + " " + currency.format(moneyProvided));
 						break;
 					}
 				}
@@ -154,7 +157,33 @@ public class VendingMachineCLI {
 				break;
 			}
 			else if (choice.equals("4")){
-				System.out.println("that worked!");
+				String pathName = "capstone/salesreport" + LocalDateTime.now().format(formatter) + ".txt";
+				pathName = pathName.replace(":", "-");
+				File salesReport = new File(pathName);
+				BigDecimal totalRevenue = new BigDecimal("0");
+				try {
+					salesReport.createNewFile();
+					FileWriter salesReporter = new FileWriter(salesReport, true);
+					for (VendingItem item:vendingItemList) {
+
+						int itemQuantitySold = Math.abs(item.getQuantity()-5);
+						String out = item.getName() + "|" + itemQuantitySold + "\n";
+						totalRevenue = totalRevenue.add(item.getPrice().multiply(BigDecimal.valueOf(itemQuantitySold)));
+						salesReporter.append(out);
+					}
+					String revenueString = "Total Revenue: " + totalRevenue;
+					salesReporter.append(revenueString);
+					salesReporter.close();
+
+
+
+				} catch (IOException e) {
+					System.err.println("IOException occurred");
+				}
+				//Make a file
+				//get list of items
+				//get number of items sold
+				//calculate total sales
 			}
 
 		}
