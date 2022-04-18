@@ -7,17 +7,11 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.text.DecimalFormat;
 import java.text.NumberFormat;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Scanner;
 
 public class VendingMachineCLI {
@@ -49,7 +43,7 @@ public class VendingMachineCLI {
 			}
 		} catch (FileNotFoundException e) {
 
-			System.out.println("Whoops");
+			System.out.println("File not found");
 		}
 		while (true) {
 			String choice = (String) menu.getChoiceFromOptions(MAIN_MENU_OPTIONS);
@@ -76,8 +70,8 @@ public class VendingMachineCLI {
 						double money = Double.parseDouble(scanner.next());
 						if(money == 1 || money == 2 || money == 5 || money == 10) {
 							moneyProvided = moneyProvided.add(BigDecimal.valueOf(money));
-							VendingLog.Log(String.valueOf(LocalDateTime.now().format(formatter) + " FEED MONEY " +
-									currency.format(money) + " " + currency.format(moneyProvided)));
+							VendingLog.Log(LocalDateTime.now().format(formatter) + " FEED MONEY " +
+									currency.format(money) + " " + currency.format(moneyProvided));
 						}
 						else {
 							System.out.println("Invalid Input");
@@ -106,8 +100,8 @@ public class VendingMachineCLI {
 									vendingItemList.get(i).buyItem();
 									System.out.println(vendingItemList.get(i).getName() + " " + currency.format(vendingItemList.get(i).getPrice()) + " " + currency.format(moneyProvided));
 									System.out.println(vendingItemList.get(i).getEatingSounds());
-									VendingLog.Log(String.valueOf(LocalDateTime.now().format(formatter) + " " + vendingItemList.get(i).getName() + " " + vendingItemList.get(i).getSlot() + " " +
-											currency.format(moneyProvided.add(vendingItemList.get(i).getPrice())) + " " + currency.format(moneyProvided)));
+									VendingLog.Log(LocalDateTime.now().format(formatter) + " " + vendingItemList.get(i).getName() + " " + vendingItemList.get(i).getSlot() + " " +
+											currency.format(moneyProvided.add(vendingItemList.get(i).getPrice())) + " " + currency.format(moneyProvided));
 									break;
 
 
@@ -180,10 +174,7 @@ public class VendingMachineCLI {
 				} catch (IOException e) {
 					System.err.println("IOException occurred");
 				}
-				//Make a file
-				//get list of items
-				//get number of items sold
-				//calculate total sales
+
 			}
 
 		}
